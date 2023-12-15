@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+    <style>
+        /* Your existing styles remain unchanged */
+
+        #videoFeedContainer {
+            position: relative;
+        }
+
+        #recognizedInfoContainer {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="faceRecognitionContainer">
+        <div id="videoFeedContainer">
+            <img id="videoFeed" src="http://127.0.0.1:5000/video_feed" width="800" height="600">
+            <div id="recognizedInfoContainer">
+                <div class="recognizedStudent" id="recognizedStudent">
+                    <div id="recognizedMessage"></div>
+                    <div id="recognizedName">Recognized Name: </div>
+                    <img id="recognizedImage" src="" width="100" height="100" alt="Recognized Image">
+                    <div id="recognizedBatch">Batch: N/A</div>
+                    <div id="recognizedTimetable">Timetable: N/A</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const videoFeed = document.getElementById('videoFeed');
+    const recognizedStudentDiv = document.getElementById('recognizedStudent');
+    const recognizedMessageDiv = document.getElementById('recognizedMessage');
+    const recognizedNameDiv = document.getElementById('recognizedName');
+    const recognizedImage = document.getElementById('recognizedImage');
+    const recognizedBatchDiv = document.getElementById('recognizedBatch');
+    const recognizedTimetableDiv = document.getElementById('recognizedTimetable');
+    let lastRecognizedName = null;
+
+    // Use Image object for better control over the image load event
+    const image = new Image();
+    image.src = videoFeed.src;
+    image.onload = () => {
+        // Start fetching recognized information when the image loads
+        updateRecognizedInfo();
+        // Set an interval to update recognized information every second
+        setInterval(updateRecognizedInfo, 1000);
+    };
+
+    function updateRecognizedInfo() {
+        // Fetch the recognized information from the server
+        fetch('/get_recognized_info')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Check if the recognized name has changed
+                if (data.name && data.name !== lastRecognizedName) {
+                    lastRecognizedName = data.name;
+                    recognizedMessageDiv.textContent = ''; // Clear any previous messages
+                    recognizedStudentDiv.style.display = 'block';
+                    recognizedNameDiv.textContent = `Recognized Name: ${data.name}`;
+                    recognizedImage.src = ''; // Clear the image source
+                    if (data.name !== 'Unknown') {
+                        recognizedImage.src = `/get_user_image?name=${data.name}&timestamp=${new Date().getTime()}`; // Update the image source with timestamp to force refresh
+                    }
+                    recognizedBatchDiv.textContent = `Batch: ${data.info.batchName || 'N/A'}`;
+                    recognizedTimetableDiv.textContent = `Timetable: ${data.info.timetable || 'N/A'}`;
+                } else if (!data.name) {
+                    // If no face is recognized, show a different message
+                    lastRecognizedName = null;
+                    recognizedStudentDiv.style.display = 'block';
+                    recognizedMessageDiv.textContent = 'Person not recognized.';
+
+                    // Clear the recognized name, batch, timetable, and image information
+                    recognizedNameDiv.textContent = '';
+                    recognizedImage.src = '';
+                    recognizedBatchDiv.textContent = '';
+                    recognizedTimetableDiv.textContent = '';
+                }
+            })
+            .catch(error => {
+                // Log the error without disrupting the functionality
+                console.error('Error fetching recognized info:', error);
+            });
+    }
+    </script>
+</body>
+</html>
