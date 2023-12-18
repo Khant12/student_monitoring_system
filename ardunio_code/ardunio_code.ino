@@ -33,8 +33,8 @@ void loop() {
       }
       strip.show();
 
-      // Set servo to 90 degrees and turn off the buzzer
-      servo.write(90);
+      // Set servo to 180 degrees and turn off the buzzer
+      servo.write(180);
       digitalWrite(BUZZER_PIN, LOW);
     } else if (signal == '1') {
       // Turn NeoPixels red
@@ -43,9 +43,9 @@ void loop() {
       }
       strip.show();
 
-      // Turn on the buzzer and set servo to 180 degrees
+      // Turn on the buzzer and set servo to 90 degrees
       digitalWrite(BUZZER_PIN, HIGH);
-      servo.write(180);
+      servo.write(90);
       delay(200); // Buzz for 200ms
       digitalWrite(BUZZER_PIN, LOW);
     } else if (signal == '2') {
