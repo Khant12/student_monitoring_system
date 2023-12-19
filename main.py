@@ -7,11 +7,11 @@ import requests
 import time
 import pandas as pd
 import serial
-from flask import Flask, render_template, Response, jsonify, request
-from flask import send_file
+from flask import Flask, render_template, Response, jsonify, request, send_file
 
 app = Flask(__name__)
-ser = serial.Serial('COM4', 9600) # change the serial port connect from your ardunio uno
+ser = serial.Serial('COM8', 9600)  # change the serial port connect from your Arduino Uno
+
 
 class FaceRecognition:
     face_locations = []
@@ -89,8 +89,6 @@ class FaceRecognition:
                             print(f"{current_time}: {name}")
 
                             if name != 'Unknown':
-
-
                                 student_info = self.get_student_info(name)
                                 print(f"Batch Name: {student_info['BatchName']}, TimeTable: {student_info['TimeTable']}")
 
@@ -149,22 +147,22 @@ class FaceRecognition:
                                                             (255, 255, 255), 1)
 
                 # If the name is 'Unknown', set the values for the added attributes
-                    if name == 'Unknown':
-                        self.currentRecognizedName = name
-                        self.currentBatchName = 'no record'
-                        self.currentTimetable = 'no record'
+                if name == 'Unknown':
+                    self.currentRecognizedName = name
+                    self.currentBatchName = 'no record'
+                    self.currentTimetable = 'no record'
 
-                        person_detected = True
-                        print("Sending signal '1' to turn on red LED.")
+                    person_detected = True
+                    print("Sending signal '1' to turn on red LED.")
 
-                        ser.write(b'1')
+                    ser.write(b'1')
 
-                        cv2.rectangle(frame, (left * 4, top * 4), (right * 4, bottom * 4), (0, 0, 255), 2)
-                        cv2.rectangle(frame, (left * 4, bottom * 4 - 35), (right * 4, bottom * 4), (0, 0, 255),
-                                      cv2.FILLED)
-                        font = cv2.FONT_HERSHEY_DUPLEX
-                        cv2.putText(frame, name, (left * 4 + 6, bottom * 4 - 6), font, 0.5, (255, 255, 255), 1)
-                        self.save_unknown_person_image(frame)
+                    cv2.rectangle(frame, (left * 4, top * 4), (right * 4, bottom * 4), (0, 0, 255), 2)
+                    cv2.rectangle(frame, (left * 4, bottom * 4 - 35), (right * 4, bottom * 4), (0, 0, 255),
+                                  cv2.FILLED)
+                    font = cv2.FONT_HERSHEY_DUPLEX
+                    cv2.putText(frame, name, (left * 4 + 6, bottom * 4 - 6), font, 0.5, (255, 255, 255), 1)
+                    self.save_unknown_person_image(frame)
 
                 if not person_detected:
                     print("No person detected. Sending signal '2' to turn off LED.")
@@ -175,11 +173,12 @@ class FaceRecognition:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n')
 
-    def save_unknown_person_image(self, frame):   # it will save the photo if there was unknown person detected.
+    def save_unknown_person_image(self, frame):  # it will save the photo if there was an unknown person detected.
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         image_filename = f"{self.image_folder}/unknown_person_{timestamp}.jpg"
         cv2.imwrite(image_filename, frame)
         print(f"Unknown person image saved: {image_filename}")
+
 
 fr = FaceRecognition()
 
@@ -210,7 +209,27 @@ def get_user_image():
 @app.route('/get_recognized_info')
 def get_recognized_info():
     time.sleep(1)
-    return jsonify({'name': fr.currentRecognizedName, 'info': {'batchName': fr.currentBatchName, 'timetable': fr.currentTimetable}})
+    return jsonify({'name': fr.currentRecognizedName,
+                    'info': {'batchName': fr.currentBatchName, 'timetable': fr.currentTimetable}})
+
+
+@app.route('/capture_photo')
+def capture_photo():
+    try:
+        # Retrieve a frame from the camera feed
+        response = requests.get('http://192.168.8.143/cam-mid.jpg')
+        frame = cv2.imdecode(np.array(bytearray(response.content), dtype=np.uint8), -1)
+
+        # Save the captured frame to the 'captures' folder
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        capture_filename = f'captures/captured_photo_{timestamp}.jpg'
+        cv2.imwrite(capture_filename, frame)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error capturing photo: {e}")
+        return jsonify({'success': False})
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
