@@ -7,15 +7,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition</title>
     <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #faceRecognitionContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #videoFeedContainer {
+            position: relative;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #videoFeed {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #contentContainer {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+          #title {
+            position: fixed;
+            top: 10px;
+            right: 120px; /* Adjust the right position as needed */
+            z-index: 1;
+            text-align: center;
+
+        }
+
         #recognizedInfoContainer {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             padding: 10px;
             gap: 10px;
-            position: absolute;
-            top: 10px;
-            right: 10px;
             background-color: rgba(255, 255, 255, 0.8);
             border-radius: 5px;
         }
@@ -50,7 +88,7 @@
             margin-bottom: 10px;
         }
 
-          .pagination {
+        .pagination {
             margin-top: 10px;
             display: flex;
             gap: 5px;
@@ -65,21 +103,24 @@
             border-radius: 3px;
         }
 
-        #title {
-            position: fixed;
-    top: 10px;
-    right: 120px; /* Adjust the right position as needed */
-    z-index: 1;
-    text-align: center;
+
+        #captureButton {
+        padding: 10px 20px;
+        background-color: #28a745;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-left: 300px;
+        margin-top: 15px;
 
         }
 
-        #contentContainer {
-            position: relative;
-            margin-top: -600px; /* Adjust the margin-top to provide space for the fixed title */
+        #captureButton:hover {
+            background-color: #218838;
         }
-
-
     </style>
 </head>
 
@@ -88,6 +129,10 @@
     <div id="faceRecognitionContainer">
         <div id="videoFeedContainer">
             <img id="videoFeed" src="http://127.0.0.1:5000/video_feed" width="800" height="680">
+
+            <!-- Add this button inside the #videoFeedContainer -->
+            <button id="captureButton" onclick="capturePhoto()">Capture Photo</button>
+
 
             <div id="contentContainer">
                 <h1 id="title">Student Entrance Records List</h1>
@@ -140,6 +185,28 @@
             console.error('Error fetching recognized info:', error);
         });
 }
+
+
+    function capturePhoto() {
+        fetch('/capture_photo')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert('Photo captured and saved successfully!');
+                } else {
+                    alert('Failed to capture photo. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error capturing photo:', error);
+            });
+    }
+
 
 function updateRecognizedStudentUI(index) {
     const student = recognizedStudents[index];
