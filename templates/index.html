@@ -65,15 +65,35 @@
             border-radius: 3px;
         }
 
+        #title {
+            position: fixed;
+    top: 10px;
+    right: 120px; /* Adjust the right position as needed */
+    z-index: 1;
+    text-align: center;
+
+        }
+
+        #contentContainer {
+            position: relative;
+            margin-top: -600px; /* Adjust the margin-top to provide space for the fixed title */
+        }
+
+
     </style>
 </head>
 
 <body>
+
     <div id="faceRecognitionContainer">
         <div id="videoFeedContainer">
             <img id="videoFeed" src="http://127.0.0.1:5000/video_feed" width="800" height="680">
-            <div id="recognizedInfoContainer">
+
+            <div id="contentContainer">
+                <h1 id="title">Student Entrance Records List</h1>
+                <div id="recognizedInfoContainer">
                 <!-- Recognized students' information boxes will be appended here -->
+                </div>
             </div>
         </div>
     </div>
@@ -93,24 +113,44 @@
         };
 
         function updateRecognizedInfo() {
-            fetch('/get_recognized_info')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.name && !recognizedStudents.some(student => student.name === data.name)) {
-                        const recognizedStudent = { name: data.name, info: data.info, timestamp: new Date() };
-                        recognizedStudents.push(recognizedStudent);
-                        updateRecognizedStudentsUI();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching recognized info:', error);
-                });
-        }
+    fetch('/get_recognized_info')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.name) {
+                const existingStudentIndex = recognizedStudents.findIndex(student => student.name === data.name);
+
+                if (existingStudentIndex !== -1) {
+                    // Update timestamp for the existing student
+                    recognizedStudents[existingStudentIndex].timestamp = new Date();
+                    updateRecognizedStudentUI(existingStudentIndex);
+                } else {
+                    // Add a new student if not already recognized
+                    const recognizedStudent = { name: data.name, info: data.info, timestamp: new Date() };
+                    recognizedStudents.push(recognizedStudent);
+                    updateRecognizedStudentsUI();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching recognized info:', error);
+        });
+}
+
+function updateRecognizedStudentUI(index) {
+    const student = recognizedStudents[index];
+    const recognizedStudentCard = recognizedInfoContainer.querySelector(`.recognizedStudentCard:nth-child(${index + 1})`);
+
+    if (recognizedStudentCard) {
+        recognizedStudentCard.querySelector('.infoContainer > div:last-child').textContent =
+            `Time Detected: ${formatTimestamp(student.timestamp)}`;
+    }
+}
+
 
          function updateRecognizedStudentsUI() {
         recognizedInfoContainer.innerHTML = ''; // Clear previous content
