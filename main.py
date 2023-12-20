@@ -10,7 +10,7 @@ import serial
 from flask import Flask, render_template, Response, jsonify, request, send_file
 
 app = Flask(__name__)
-ser = serial.Serial('COM8', 9600)  # change the serial port connect from your Arduino Uno
+ser = serial.Serial('COM9', 9600)  # change the serial port connect from your Arduino Uno
 
 
 class FaceRecognition:
@@ -51,7 +51,7 @@ class FaceRecognition:
             return {'BatchName': 'N/A', 'TimeTable': 'N/A'}
 
     def generate_frames(self):
-        esp32_cam_url = 'http://192.168.8.143/cam-mid.jpg'
+        esp32_cam_url = 'http://192.168.22.8/cam-mid.jpg'
 
         frame_skip_counter = 0
 
@@ -147,22 +147,22 @@ class FaceRecognition:
                                                             (255, 255, 255), 1)
 
                 # If the name is 'Unknown', set the values for the added attributes
-                if name == 'Unknown':
-                    self.currentRecognizedName = name
-                    self.currentBatchName = 'no record'
-                    self.currentTimetable = 'no record'
+                    if name == 'Unknown':
+                        self.currentRecognizedName = name
+                        self.currentBatchName = 'no record'
+                        self.currentTimetable = 'no record'
 
-                    person_detected = True
-                    print("Sending signal '1' to turn on red LED.")
+                        person_detected = True
+                        print("Sending signal '1' to turn on red LED.")
 
-                    ser.write(b'1')
+                        ser.write(b'1')
 
-                    cv2.rectangle(frame, (left * 4, top * 4), (right * 4, bottom * 4), (0, 0, 255), 2)
-                    cv2.rectangle(frame, (left * 4, bottom * 4 - 35), (right * 4, bottom * 4), (0, 0, 255),
+                        cv2.rectangle(frame, (left * 4, top * 4), (right * 4, bottom * 4), (0, 0, 255), 2)
+                        cv2.rectangle(frame, (left * 4, bottom * 4 - 35), (right * 4, bottom * 4), (0, 0, 255),
                                   cv2.FILLED)
-                    font = cv2.FONT_HERSHEY_DUPLEX
-                    cv2.putText(frame, name, (left * 4 + 6, bottom * 4 - 6), font, 0.5, (255, 255, 255), 1)
-                    self.save_unknown_person_image(frame)
+                        font = cv2.FONT_HERSHEY_DUPLEX
+                        cv2.putText(frame, name, (left * 4 + 6, bottom * 4 - 6), font, 0.5, (255, 255, 255), 1)
+                        self.save_unknown_person_image(frame)
 
                 if not person_detected:
                     print("No person detected. Sending signal '2' to turn off LED.")
@@ -217,7 +217,7 @@ def get_recognized_info():
 def capture_photo():
     try:
         # Retrieve a frame from the camera feed
-        response = requests.get('http://192.168.8.143/cam-mid.jpg')
+        response = requests.get('http://192.168.22.8/cam-mid.jpg')
         frame = cv2.imdecode(np.array(bytearray(response.content), dtype=np.uint8), -1)
 
         # Save the captured frame to the 'captures' folder
